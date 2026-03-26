@@ -2,9 +2,9 @@
 Este repositório contém exemplos práticos e exercícios utilizados durante o curso de Rust. O objetivo é fornecer uma base sólida desde cálculos simples até o desenvolvimento de Smart Contracts utilizando Soroban SDK.
 
 ---
-## Codigos a serem executados no Rust Playground
+### Codigos a serem executados no Rust Playground
 
-### Código 1 - Calculos basicos
+## Código 1 - Calculos basicos
 
 Rodar em Rust Playground: 
 https://play.rust-lang.org/?version=stable&mode=debug&edition=2024
@@ -53,7 +53,7 @@ fn main() {
 `````	
 ---
 
-### Código 2 - Calculo de media
+## Código 2 - Calculo de media
 
 Rodar em Rust Playground: 
 https://play.rust-lang.org/?version=stable&mode=debug&edition=2024
@@ -101,7 +101,7 @@ fn main() {
 	
 ---
 
-### Código 3 - Verificar idade e imprimir status
+## Código 3 - Verificar idade e imprimir status
 
 Rodar em Rust Playground: 
 https://play.rust-lang.org/?version=stable&mode=debug&edition=2024
@@ -131,7 +131,7 @@ fn main() {
 ---
 
 
-### Código 4 - SmartContract
+## Código 4 - SmartContract
 
 Rodar em https://soropg.com/
 
@@ -218,3 +218,97 @@ fn test() {
 `````
 	
 ---
+
+## Código 5 - Contrato de testes unitários
+
+Rodar em https://soropg.com/
+
+#### Arquivo lib.rs
+
+```rust
+#![no_std]
+use soroban_sdk::{contract, contractimpl, Env, String};
+
+#[contract]
+pub struct Contract;
+
+#[contractimpl]
+impl Contract {
+    pub fn calculate_status(env: Env, nota1: i32, nota2: i32, nota3: i32) -> String {
+        let media = (nota1 + nota2 + nota3) / 3;
+
+        if media >= 700 {
+            String::from_str(&env, "Aprovado")
+        } else {
+            String::from_str(&env, "Reprovado")
+        }
+    }
+}
+
+mod test;
+`````
+
+#### Arquivo test.rs
+
+```rust
+#![cfg(test)]
+
+use super::*;
+use soroban_sdk::{Env, String};
+
+#[test]
+fn test_calculate_status_aprovado() {
+    let env = Env::default(); // Inicializa o ambiente de simulação
+    let contract_id = env.register(Contract, ()); // Registra o contrato no ambiente
+    let client = ContractClient::new(&env, &contract_id); // Cria o cliente para chamadas
+
+    // Executa o cálculo com notas acima da média esperada
+    let status = client.calculate_status(&750, &800, &700);
+    // Valida se o retorno é exatamente a String "Aprovado"
+    assert_eq!(status, String::from_str(&env, "Aprovado"));
+}
+
+#[test]
+fn test_calculate_status_reprovado() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    // Executa o cálculo com notas baixas para garantir a reprovação
+    let status = client.calculate_status(&550, &600, &625);
+    assert_eq!(status, String::from_str(&env, "Reprovado"));
+}
+
+#[test]
+fn test_calculate_status_limite_aprovado() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    // Testa a fronteira exata (700) do critério de aprovação
+    let status = client.calculate_status(&700, &700, &700);
+    assert_eq!(status, String::from_str(&env, "Aprovado"));
+}
+
+#[test]
+fn test_calculate_status_limite_reprovado() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    // Testa o valor imediatamente anterior ao limite (699)
+    let status = client.calculate_status(&699, &699, &699);
+    assert_eq!(status, String::from_str(&env, "Reprovado"));
+}
+
+#[test]
+fn test_calculate_status_notas_altas() {
+    let env = Env::default();
+    let contract_id = env.register(Contract, ());
+    let client = ContractClient::new(&env, &contract_id);
+
+    // Valida a consistência com valores no topo da escala permitida
+    let status = client.calculate_status(&1000, &950, &900);
+    assert_eq!(status, String::from_str(&env, "Aprovado"));
+}
+`````
